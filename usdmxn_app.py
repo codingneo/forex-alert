@@ -137,6 +137,7 @@ input_support = st.number_input('Set support value for USD/MXN:', format="%.4f")
 input_resistance = st.number_input('Set resistance value for USD/MXN:', format="%.4f")  # You can change the default value
 
 if st.button('Set Alert'):
+    global alert_support, alert_resistance
     alert_support = float(input_support)
     alert_resistance = float(input_resistance)
     st.success(f"Alert set for USD/MXN at {alert_support}, {alert_resistance}")
