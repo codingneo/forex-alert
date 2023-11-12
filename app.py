@@ -108,6 +108,9 @@ def check_price():
     else:
         print("Failed to retrieve data")
 
+def job():
+    print("Running the job...")
+
 # Calculate the delay until the next 4-hour mark starting from a specific time
 def run_at_specific_time(hour_to_start):
     now = datetime.now()
@@ -121,13 +124,6 @@ def run_at_specific_time(hour_to_start):
     return delay
 
 def run_scheduler():
-
-    # Initialize the first run delay
-    first_run_delay = run_at_specific_time(2)  # Starts running at 08:00 AM
-
-    # Run the job for the first time after the delay
-    schedule.enter(first_run_delay, 1, job)
-
     # Run the check_price function every 4 hours
     schedule.every(4).hours.do(check_price)
     while True:
@@ -144,6 +140,11 @@ if st.button('Set Alert'):
     alert_support = float(input_support)
     alert_resistance = float(input_resistance)
     st.success(f"Alert set for USD/MXN at {alert_support}, {alert_resistance}")
+
+# Initialize the first run delay
+first_run_delay = run_at_specific_time(2)  # Starts running at 08:00 AM
+# Sleep until the scheduled start time
+time.sleep(first_run_delay)
 
 # Start the scheduler thread
 Thread(target=run_scheduler).start()
