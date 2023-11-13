@@ -8,7 +8,8 @@ from threading import Thread
 
 from utils import is_hammer, is_shooting_star
 
-
+# Currency_pair
+currency_pair = 'USD_MXN'
 
 # The webhook URL that you copied from your Discord server
 webhook_url = 'https://discord.com/api/webhooks/1173258822341640193/jgT1nrH3d9xo6-7Sc3H38-oEU25MblHMtjxd1-f-FvL6s6HMiR8gS3QVUy-Ohjk_axyK'
@@ -17,7 +18,7 @@ webhook_url = 'https://discord.com/api/webhooks/1173258822341640193/jgT1nrH3d9xo
 # OANDA API information
 api_key = "c89d4d36bf19bd1c810ca3a59797d78b-c33df693c4f8ba9d0beb3d8a4e431192"  # Replace with your actual OANDA API key
 account_id = "101-003-27403441-001"  # Replace with your OANDA account ID
-url = f"https://api-fxpractice.oanda.com/v3/accounts/{account_id}/instruments/USD_MXN/candles?price=M&granularity=H4&count=2"
+url = f"https://api-fxpractice.oanda.com/v3/accounts/{account_id}/instruments/{currency_pair}/candles?price=M&granularity=H4&count=2"
 
 forex_headers = {
     "Content-Type": "application/json",
@@ -42,11 +43,11 @@ def check_price():
         is_shooting_star_flag = is_shooting_star(float(latest_open), float(latest_high), float(latest_low), float(latest_close))
 
         if (float(latest_low)<=alert_support*1.05) and (is_hammer_flag):
-            st.warning(f"Alert: USD/MXN has reached the specified value of {alert_support}")
+            st.warning(f"Alert: {currency_pair} has reached the specified value of {alert_support}")
             # Here you can add code to send an actual alert, like an email or a notification
 
             # The message that you want to send
-            message = 'Hello, USD/MXN reach support area and has a hammer pattern'
+            message = f'Hello, {currency_pair} reach support area and has a hammer pattern'
 
             # The username and avatar URL are optional, but they can customize the appearance of the webhook message
             # username = 'My Python Bot'
@@ -74,11 +75,11 @@ def check_price():
                 print('Failed to send message. Response:', response.content)
                             
     if (float(latest_high)>=alert_resistance*0.95) and (is_shooting_star_flag):
-            st.warning(f"Alert: USD/MXN has reached the resistance area: {alert_resistance}")
+            st.warning(f"Alert: {currency_pair} has reached the resistance area: {alert_resistance}")
             # Here you can add code to send an actual alert, like an email or a notification
 
             # The message that you want to send
-            message = 'Hello, USD/MXN reach resistance area and has a shooting star pattern'
+            message = f'Hello, {currency_pair} reach resistance area and has a shooting star pattern'
 
             # The username and avatar URL are optional, but they can customize the appearance of the webhook message
             # username = 'My Python Bot'
@@ -112,8 +113,27 @@ def job():
     print("Running the job...")
 
 # Calculate the delay until the next 4-hour mark starting from a specific time
-def run_at_specific_time(hour_to_start):
+def run_at_specific_time():
     now = datetime.now()
+    if (now.hour<=2):
+        hour_to_start = 2
+    else:
+        if (now.hour<=6):
+            hour_to_start = 6
+        else:
+            if (now.hour<=10):
+                hour_to_start = 10
+            else:
+                if (now.hour<=14):
+                    hour_to_start = 14
+                else: 
+                    if (now.hour<=18): 
+                        hour_to_start = 18 
+                    else: 
+                        if (now.hour<=22):
+                            hour_to_start = 22
+                        else:
+                            hour_to_start = 2
     next_run = now.replace(hour=hour_to_start, minute=0, second=0, microsecond=0)
     
     # If the next run time is in the past, add 4 hours to it until it's in the future
@@ -131,18 +151,18 @@ def run_scheduler():
         time.sleep(1)
 
 # Streamlit app to set the alert value
-st.title('USD/MXN Price Alert System')
+st.title(f'{currency_pair} Price Alert System')
 
-input_support = st.number_input('Set support value for USD/MXN:', format="%.4f")  # You can change the default value
-input_resistance = st.number_input('Set resistance value for USD/MXN:', format="%.4f")  # You can change the default value
+input_support = st.number_input(f'Set support value for {currency_pair}:', format="%.4f")  # You can change the default value
+input_resistance = st.number_input(f'Set resistance value for {currency_pair}:', format="%.4f")  # You can change the default value
 
 if st.button('Set Alert'):
     alert_support = float(input_support)
     alert_resistance = float(input_resistance)
-    st.success(f"Alert set for USD/MXN at {alert_support}, {alert_resistance}")
+    st.success(f"Alert set for {currency_pair} at {alert_support}, {alert_resistance}")
 
 # Initialize the first run delay
-first_run_delay = run_at_specific_time(2)  # Starts running at 08:00 AM
+first_run_delay = run_at_specific_time()  # Starts running at 08:00 AM
 # Sleep until the scheduled start time
 time.sleep(first_run_delay)
 
