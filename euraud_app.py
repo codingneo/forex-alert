@@ -113,8 +113,27 @@ def job():
     print("Running the job...")
 
 # Calculate the delay until the next 4-hour mark starting from a specific time
-def run_at_specific_time(hour_to_start):
+def run_at_specific_time():
     now = datetime.now()
+    if (now.hour<=2):
+        hour_to_start = 2
+    else:
+        if (now.hour<=6):
+            hour_to_start = 6
+        else:
+            if (now.hour<=10):
+                hour_to_start = 10
+            else:
+                if (now.hour<=14):
+                    hour_to_start = 14
+                else: 
+                    if (now.hour<=18): 
+                        hour_to_start = 18 
+                    else: 
+                        if (now.hour<=22):
+                            hour_to_start = 22
+                        else:
+                            hour_to_start = 2
     next_run = now.replace(hour=hour_to_start, minute=0, second=0, microsecond=0)
     
     # If the next run time is in the past, add 4 hours to it until it's in the future
@@ -143,7 +162,7 @@ if st.button('Set Alert'):
     st.success(f"Alert set for {currency_pair} at {alert_support}, {alert_resistance}")
 
 # Initialize the first run delay
-first_run_delay = run_at_specific_time(2)  # Starts running at 08:00 AM
+first_run_delay = run_at_specific_time()  # Starts running at 08:00 AM
 # Sleep until the scheduled start time
 time.sleep(first_run_delay)
 
