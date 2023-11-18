@@ -210,8 +210,8 @@ def run_at_specific_time():
 def run_scheduler():
     global alert_support, alert_resistance
     # Run the check_price function every 4 hours
-    # schedule.every(4).hours.do(check_price)
-    schedule.every(1).minutes.do(check_price)
+    schedule.every(4).hours.do(check_price)
+    # schedule.every(1).minutes.do(check_price)
     while True:
         schedule.run_pending()
         time.sleep(1)
