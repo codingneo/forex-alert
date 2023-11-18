@@ -29,7 +29,8 @@ global alert_support  # Global variable to hold the alert value
 global alert_resistance 
 
 def check_price():
-    # global alert_support, alert_resistance
+    global alert_support, alert_resistance
+    print('Checking the candle every 4 hours')
     response = requests.get(url, headers=forex_headers)
     
     if response.status_code == 200:
@@ -42,12 +43,13 @@ def check_price():
         is_hammer_flag = is_hammer(float(latest_open), float(latest_high), float(latest_low), float(latest_close))
         is_shooting_star_flag = is_shooting_star(float(latest_open), float(latest_high), float(latest_low), float(latest_close))
 
-        if (float(latest_low)<=alert_support*1.05) and (is_hammer_flag):
+        if (float(latest_low)<=alert_support*1.05):
+            
             st.warning(f"Alert: {currency_pair} has reached the specified value of {alert_support}")
             # Here you can add code to send an actual alert, like an email or a notification
 
             # The message that you want to send
-            message = f'Hello, {currency_pair} reach support area and has a hammer pattern'
+            message = f'Hello, {currency_pair} reach support area'
 
             # The username and avatar URL are optional, but they can customize the appearance of the webhook message
             # username = 'My Python Bot'
@@ -73,13 +75,46 @@ def check_price():
                 print('Message sent successfully.')
             else:
                 print('Failed to send message. Response:', response.content)
+
+            if (is_hammer_flag): 
+                st.warning(f"Alert: {currency_pair} has reached the specified value of {alert_support}")
+                # Here you can add code to send an actual alert, like an email or a notification
+
+                # The message that you want to send
+                message = f'Hello, {currency_pair} reach support area and has a hammer pattern'
+
+                # The username and avatar URL are optional, but they can customize the appearance of the webhook message
+                # username = 'My Python Bot'
+                # avatar_url = 'URL_TO_AVATAR_IMAGE'
+
+                # Create the payload to send to the webhook
+                data = {
+                    'content': message,
+                    # 'username': username,
+                    # 'avatar_url': avatar_url
+                }
+
+                # Set the headers, including the content type
+                headers = {
+                    'Content-Type': 'application/json'
+                }
+
+                # Post the message using the requests library
+                response = requests.post(webhook_url, json=data, headers=headers)
+
+                # Check the response
+                if response.status_code == 204:
+                    print('Message sent successfully.')
+                else:
+                    print('Failed to send message. Response:', response.content)
                             
-    if (float(latest_high)>=alert_resistance*0.95) and (is_shooting_star_flag):
+    if (float(latest_high)>=alert_resistance*0.95):
+            print('Go into area of value - resistance')
             st.warning(f"Alert: {currency_pair} has reached the resistance area: {alert_resistance}")
             # Here you can add code to send an actual alert, like an email or a notification
 
             # The message that you want to send
-            message = f'Hello, {currency_pair} reach resistance area and has a shooting star pattern'
+            message = f'Hello, {currency_pair} reach resistance area'
 
             # The username and avatar URL are optional, but they can customize the appearance of the webhook message
             # username = 'My Python Bot'
@@ -105,6 +140,35 @@ def check_price():
                 print('Message sent successfully.')
             else:
                 print('Failed to send message. Response:', response.content)
+            
+            if (is_shooting_star_flag): 
+                # The message that you want to send
+                message = f'Hello, {currency_pair} reach resistance area and has a shooting star pattern'
+
+                # The username and avatar URL are optional, but they can customize the appearance of the webhook message
+                # username = 'My Python Bot'
+                # avatar_url = 'URL_TO_AVATAR_IMAGE'
+
+                # Create the payload to send to the webhook
+                data = {
+                    'content': message,
+                    # 'username': username,
+                    # 'avatar_url': avatar_url
+                }
+
+                # Set the headers, including the content type
+                headers = {
+                    'Content-Type': 'application/json'
+                }
+
+                # Post the message using the requests library
+                response = requests.post(webhook_url, json=data, headers=headers)
+
+                # Check the response
+                if response.status_code == 204:
+                    print('Message sent successfully.')
+                else:
+                    print('Failed to send message. Response:', response.content)
                         
     else:
         print("Failed to retrieve data")
@@ -144,8 +208,10 @@ def run_at_specific_time():
     return delay
 
 def run_scheduler():
+    global alert_support, alert_resistance
     # Run the check_price function every 4 hours
-    schedule.every(4).hours.do(check_price)
+    # schedule.every(4).hours.do(check_price)
+    schedule.every(1).minutes.do(check_price)
     while True:
         schedule.run_pending()
         time.sleep(1)
@@ -161,10 +227,10 @@ if st.button('Set Alert'):
     alert_resistance = float(input_resistance)
     st.success(f"Alert set for {currency_pair} at {alert_support}, {alert_resistance}")
 
-# Initialize the first run delay
-first_run_delay = run_at_specific_time()  # Starts running at 08:00 AM
-# Sleep until the scheduled start time
-time.sleep(first_run_delay)
+    # Initialize the first run delay
+    first_run_delay = run_at_specific_time()  # Starts running at 08:00 AM
+    # Sleep until the scheduled start time
+    time.sleep(first_run_delay)
 
-# Start the scheduler thread
-Thread(target=run_scheduler).start()
+    # Start the scheduler thread
+    Thread(target=run_scheduler).start()
