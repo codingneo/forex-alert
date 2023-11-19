@@ -30,7 +30,7 @@ global alert_resistance
 
 def check_price():
     global alert_support, alert_resistance
-    print('Checking the candle every 4 hours')
+    # print('Checking the candle every 4 hours')
     response = requests.get(url, headers=forex_headers)
     
     if response.status_code == 200:
@@ -43,13 +43,15 @@ def check_price():
         is_hammer_flag = is_hammer(float(latest_open), float(latest_high), float(latest_low), float(latest_close))
         is_shooting_star_flag = is_shooting_star(float(latest_open), float(latest_high), float(latest_low), float(latest_close))
 
-        if (float(latest_low)<=alert_support*1.05):
+        # determine whether latest candle goes into the area of support
+        if (float(latest_low)<=alert_support+(alert_resistance-alert_support)*0.05) and 
+            (float(latest_high)>=alert_support-(alert_resistance-alert_support)*0.05):
             
             st.warning(f"Alert: {currency_pair} has reached the specified value of {alert_support}")
             # Here you can add code to send an actual alert, like an email or a notification
 
             # The message that you want to send
-            message = f'Hello, {currency_pair} reach support area'
+            message = f'Hello, {currency_pair} reach support area of {alert_support}'
 
             # The username and avatar URL are optional, but they can customize the appearance of the webhook message
             # username = 'My Python Bot'
@@ -107,14 +109,17 @@ def check_price():
                     print('Message sent successfully.')
                 else:
                     print('Failed to send message. Response:', response.content)
-                            
-    if (float(latest_high)>=alert_resistance*0.95):
+
+        
+        # determine whether latest candle goes into the area of resistance
+        if (float(latest_high)>=alert_resistance-(alert_resistance-alert_support)*0.05) and 
+            (float(latest_low)<=alert_resistance+(alert_resistance-alert_support)*0.05):
             print('Go into area of value - resistance')
             st.warning(f"Alert: {currency_pair} has reached the resistance area: {alert_resistance}")
             # Here you can add code to send an actual alert, like an email or a notification
 
             # The message that you want to send
-            message = f'Hello, {currency_pair} reach resistance area'
+            message = f'Hello, {currency_pair} reach resistance area of {alert_resistance}'
 
             # The username and avatar URL are optional, but they can customize the appearance of the webhook message
             # username = 'My Python Bot'
