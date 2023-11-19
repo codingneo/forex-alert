@@ -1,4 +1,5 @@
 import streamlit as st
+from streamlit_server_state import server_state, server_state_lock
 import requests
 import schedule
 from datetime import datetime, timedelta
@@ -25,11 +26,11 @@ forex_headers = {
     "Authorization": f"Bearer {api_key}"
 }
 
-global alert_support  # Global variable to hold the alert value
-global alert_resistance 
+# global alert_support  # Global variable to hold the alert value
+# global alert_resistance 
 
 def check_price():
-    global alert_support, alert_resistance
+    # global alert_support, alert_resistance
     # print('Checking the candle every 4 hours')
     response = requests.get(url, headers=forex_headers)
     
@@ -43,8 +44,13 @@ def check_price():
         is_hammer_flag = is_hammer(float(latest_open), float(latest_high), float(latest_low), float(latest_close))
         is_shooting_star_flag = is_shooting_star(float(latest_open), float(latest_high), float(latest_low), float(latest_close))
 
+        with server_state_lock["support_level"]:
+            alert_support = float(server_state.support_level)
+        with server_state_lock["resistance_level"]:
+            alert_resistance = float(server_state.resistance_level)
+
         # determine whether latest candle goes into the area of support
-        if (float(latest_low)<=alert_support+(alert_resistance-alert_support)*0.05) and 
+        if (float(latest_low)<=alert_support+(alert_resistance-alert_support)*0.05) and \
             (float(latest_high)>=alert_support-(alert_resistance-alert_support)*0.05):
             
             st.warning(f"Alert: {currency_pair} has reached the specified value of {alert_support}")
@@ -112,7 +118,7 @@ def check_price():
 
         
         # determine whether latest candle goes into the area of resistance
-        if (float(latest_high)>=alert_resistance-(alert_resistance-alert_support)*0.05) and 
+        if (float(latest_high)>=alert_resistance-(alert_resistance-alert_support)*0.05) and \
             (float(latest_low)<=alert_resistance+(alert_resistance-alert_support)*0.05):
             print('Go into area of value - resistance')
             st.warning(f"Alert: {currency_pair} has reached the resistance area: {alert_resistance}")
@@ -224,13 +230,29 @@ def run_scheduler():
 # Streamlit app to set the alert value
 st.title(f'{currency_pair} Price Alert System')
 
-input_support = st.number_input(f'Set support value for {currency_pair}:', format="%.4f")  # You can change the default value
-input_resistance = st.number_input(f'Set resistance value for {currency_pair}:', format="%.4f")  # You can change the default value
+with server_state_lock["support_level"]:  # Lock the "count" state for thread-safety
+    if "support_level" not in server_state:
+        input_support = st.number_input(f'Set support value for {currency_pair}:', format="%.4f")  # You can change the default value
+    else:
+        input_value = float(server_state.support_level)
+        input_support = st.number_input(f'Set support value for {currency_pair}:', format="%.4f", value=input_value)
+
+with server_state_lock["resistance_level"]: 
+    if "resistance_level" not in server_state:
+        input_resistance = st.number_input(f'Set resistance value for {currency_pair}:', format="%.4f")  # You can change the default value
+    else:
+        input_value = float(server_state.resistance_level)
+        input_resistance = st.number_input(f'Set resistance value for {currency_pair}:', format="%.4f", value=input_value) 
 
 if st.button('Set Alert'):
-    alert_support = float(input_support)
-    alert_resistance = float(input_resistance)
-    st.success(f"Alert set for {currency_pair} at {alert_support}, {alert_resistance}")
+    print(input_support)
+    print(input_resistance)
+    with server_state_lock["support_level"]:
+        server_state.support_level = float(input_support)
+    with server_state_lock["resistance_level"]:
+        server_state.resistance_level = float(input_resistance)
+    st.success(f"Alert set for {currency_pair} at {input_support}, {input_resistance}")
+    # st.success(f"Alert set for {currency_pair} at {alert_support}, {alert_resistance}")
 
     # Initialize the first run delay
     first_run_delay = run_at_specific_time()  # Starts running at 08:00 AM
