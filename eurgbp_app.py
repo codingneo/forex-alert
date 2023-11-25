@@ -1,11 +1,11 @@
 import streamlit as st
-from streamlit_server_state import server_state, server_state_lock
+from streamlit_server_state import server_state, server_state_lock, no_rerun 
 import requests
 import schedule
 from datetime import datetime, timedelta
 import time
 import json
-from threading import Thread
+from threading import Thread, Event
 
 from utils import is_hammer, is_shooting_star
 
@@ -31,6 +31,7 @@ forex_headers = {
 
 def check_price():
     # global alert_support, alert_resistance
+    print('alert_support=' + str(alert_support))
     # print('Checking the candle every 4 hours')
     response = requests.get(url, headers=forex_headers)
     
@@ -44,10 +45,10 @@ def check_price():
         is_hammer_flag = is_hammer(float(latest_open), float(latest_high), float(latest_low), float(latest_close))
         is_shooting_star_flag = is_shooting_star(float(latest_open), float(latest_high), float(latest_low), float(latest_close))
 
-        with server_state_lock["support_level"]:
-            alert_support = float(server_state.support_level)
-        with server_state_lock["resistance_level"]:
-            alert_resistance = float(server_state.resistance_level)
+        # with server_state_lock["support_level"]:
+        #     alert_support = float(server_state.support_level)
+        # with server_state_lock["resistance_level"]:
+        #     alert_resistance = float(server_state.resistance_level)
 
         # determine whether latest candle goes into the area of support
         if (float(latest_low)<=alert_support+(alert_resistance-alert_support)*0.05) and \
@@ -184,6 +185,7 @@ def check_price():
     else:
         print("Failed to retrieve data")
 
+
 def job():
     print("Running the job...")
 
@@ -218,14 +220,18 @@ def run_at_specific_time():
     delay = (next_run - now).total_seconds()
     return delay
 
-def run_scheduler():
-    global alert_support, alert_resistance
+def run_scheduler(event: Event):
+    # global alert_support, alert_resistance
     # Run the check_price function every 4 hours
-    schedule.every(4).hours.do(check_price)
-    # schedule.every(1).minutes.do(check_price)
+    # schedule.every(4).hours.do(check_price)
+    job = schedule.every(1).minutes.do(check_price)
     while True:
         schedule.run_pending()
         time.sleep(1)
+        if event.is_set(): 
+            print('Stop current scheduling thread ...')
+            schedule.cancel_job(job)
+            break;
 
 # Streamlit app to set the alert value
 st.title(f'{currency_pair} Price Alert System')
@@ -245,19 +251,39 @@ with server_state_lock["resistance_level"]:
         input_resistance = st.number_input(f'Set resistance value for {currency_pair}:', format="%.4f", value=input_value) 
 
 if st.button('Set Alert'):
+    print('button logic')
     print(input_support)
     print(input_resistance)
-    with server_state_lock["support_level"]:
-        server_state.support_level = float(input_support)
-    with server_state_lock["resistance_level"]:
-        server_state.resistance_level = float(input_resistance)
-    st.success(f"Alert set for {currency_pair} at {input_support}, {input_resistance}")
+    
+    alert_support = float(input_support)
+    alert_resistance = float(input_resistance)
+
     # st.success(f"Alert set for {currency_pair} at {alert_support}, {alert_resistance}")
 
     # Initialize the first run delay
-    first_run_delay = run_at_specific_time()  # Starts running at 08:00 AM
+    # first_run_delay = run_at_specific_time()  # Starts running at 08:00 AM
     # Sleep until the scheduled start time
-    time.sleep(first_run_delay)
+    # time.sleep(first_run_delay)
 
     # Start the scheduler thread
-    Thread(target=run_scheduler).start()
+    with server_state_lock["thread_event"]:
+        if 'thread_event' in server_state:
+            with no_rerun: 
+                server_state.thread_event.set()
+
+    
+    event = Event()
+    Thread(target=run_scheduler, args=(event,)).start()
+    with server_state_lock["thread_event"]:
+        with no_rerun: 
+            server_state.thread_event = event
+
+
+    with server_state_lock["support_level"]:
+        with no_rerun: 
+            server_state.support_level = float(input_support)
+    with server_state_lock["resistance_level"]:
+        with no_rerun: 
+            server_state.resistance_level = float(input_resistance)
+    st.success(f"Alert set for {currency_pair} at {input_support}, {input_resistance}")
+
