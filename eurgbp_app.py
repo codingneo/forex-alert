@@ -221,10 +221,15 @@ def run_at_specific_time():
     return delay
 
 def run_scheduler(event: Event):
+    # Initialize the first run delay
+    first_run_delay = run_at_specific_time()  # Starts running at 08:00 AM
+    # Sleep until the scheduled start time
+    time.sleep(first_run_delay)
+
     # global alert_support, alert_resistance
     # Run the check_price function every 4 hours
-    # schedule.every(4).hours.do(check_price)
-    job = schedule.every(1).minutes.do(check_price)
+    schedule.every(4).hours.do(check_price)
+    # job = schedule.every(1).minutes.do(check_price)
     while True:
         schedule.run_pending()
         time.sleep(1)
@@ -259,11 +264,6 @@ if st.button('Set Alert'):
     alert_resistance = float(input_resistance)
 
     # st.success(f"Alert set for {currency_pair} at {alert_support}, {alert_resistance}")
-
-    # Initialize the first run delay
-    # first_run_delay = run_at_specific_time()  # Starts running at 08:00 AM
-    # Sleep until the scheduled start time
-    # time.sleep(first_run_delay)
 
     # Start the scheduler thread
     with server_state_lock["thread_event"]:
