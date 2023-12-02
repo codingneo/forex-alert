@@ -13,6 +13,12 @@ from utils import is_hammer, is_shooting_star
 # Currency_pair
 currency_pair = 'USD_SGD'
 
+# self url
+my_url = 'https://usdsgd.streamlit.app/'
+my_url_headers = {
+    "Content-Type": "text/html"
+}
+
 # The webhook URL that you copied from your Discord server
 webhook_url = 'https://discord.com/api/webhooks/1173258822341640193/jgT1nrH3d9xo6-7Sc3H38-oEU25MblHMtjxd1-f-FvL6s6HMiR8gS3QVUy-Ohjk_axyK'
 
@@ -31,10 +37,13 @@ forex_headers = {
 # global alert_resistance 
 
 def check_price():
+    site_response = requests.get(my_url, headers=my_url_headers)
+
+    response = requests.get(url, headers=forex_headers)
+
     # global alert_support, alert_resistance
     print('alert_support=' + str(alert_support))
     # print('Checking the candle every 4 hours')
-    response = requests.get(url, headers=forex_headers)
     
     if response.status_code == 200:
         data = response.json()
