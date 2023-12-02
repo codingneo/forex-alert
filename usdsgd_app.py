@@ -1,4 +1,5 @@
 import streamlit as st
+import streamlit_analytics
 from streamlit_server_state import server_state, server_state_lock, no_rerun 
 import requests
 import schedule
@@ -238,52 +239,53 @@ def run_scheduler(event: Event):
             schedule.cancel_job(job)
             break;
 
-# Streamlit app to set the alert value
-st.title(f'{currency_pair} Price Alert System')
+with streamlit_analytics.track():
+    # Streamlit app to set the alert value
+    st.title(f'{currency_pair} Price Alert System')
 
-with server_state_lock["support_level"]:  # Lock the "count" state for thread-safety
-    if "support_level" not in server_state:
-        input_support = st.number_input(f'Set support value for {currency_pair}:', format="%.4f")  # You can change the default value
-    else:
-        input_value = float(server_state.support_level)
-        input_support = st.number_input(f'Set support value for {currency_pair}:', format="%.4f", value=input_value)
+    with server_state_lock["support_level"]:  # Lock the "count" state for thread-safety
+        if "support_level" not in server_state:
+            input_support = st.number_input(f'Set support value for {currency_pair}:', format="%.4f")  # You can change the default value
+        else:
+            input_value = float(server_state.support_level)
+            input_support = st.number_input(f'Set support value for {currency_pair}:', format="%.4f", value=input_value)
 
-with server_state_lock["resistance_level"]: 
-    if "resistance_level" not in server_state:
-        input_resistance = st.number_input(f'Set resistance value for {currency_pair}:', format="%.4f")  # You can change the default value
-    else:
-        input_value = float(server_state.resistance_level)
-        input_resistance = st.number_input(f'Set resistance value for {currency_pair}:', format="%.4f", value=input_value) 
+    with server_state_lock["resistance_level"]: 
+        if "resistance_level" not in server_state:
+            input_resistance = st.number_input(f'Set resistance value for {currency_pair}:', format="%.4f")  # You can change the default value
+        else:
+            input_value = float(server_state.resistance_level)
+            input_resistance = st.number_input(f'Set resistance value for {currency_pair}:', format="%.4f", value=input_value) 
 
-if st.button('Set Alert'):
-    print('button logic')
-    print(input_support)
-    print(input_resistance)
-    
-    alert_support = float(input_support)
-    alert_resistance = float(input_resistance)
+    if st.button('Set Alert'):
+        print('button logic')
+        print(input_support)
+        print(input_resistance)
+        
+        alert_support = float(input_support)
+        alert_resistance = float(input_resistance)
 
-    # st.success(f"Alert set for {currency_pair} at {alert_support}, {alert_resistance}")
+        # st.success(f"Alert set for {currency_pair} at {alert_support}, {alert_resistance}")
 
-    # Start the scheduler thread
-    with server_state_lock["thread_event"]:
-        if 'thread_event' in server_state:
+        # Start the scheduler thread
+        with server_state_lock["thread_event"]:
+            if 'thread_event' in server_state:
+                with no_rerun: 
+                    server_state.thread_event.set()
+
+        
+        event = Event()
+        Thread(target=run_scheduler, args=(event,)).start()
+        with server_state_lock["thread_event"]:
             with no_rerun: 
-                server_state.thread_event.set()
-
-    
-    event = Event()
-    Thread(target=run_scheduler, args=(event,)).start()
-    with server_state_lock["thread_event"]:
-        with no_rerun: 
-            server_state.thread_event = event
+                server_state.thread_event = event
 
 
-    with server_state_lock["support_level"]:
-        with no_rerun: 
-            server_state.support_level = float(input_support)
-    with server_state_lock["resistance_level"]:
-        with no_rerun: 
-            server_state.resistance_level = float(input_resistance)
-    st.success(f"Alert set for {currency_pair} at {input_support}, {input_resistance}")
+        with server_state_lock["support_level"]:
+            with no_rerun: 
+                server_state.support_level = float(input_support)
+        with server_state_lock["resistance_level"]:
+            with no_rerun: 
+                server_state.resistance_level = float(input_resistance)
+        st.success(f"Alert set for {currency_pair} at {input_support}, {input_resistance}")
 

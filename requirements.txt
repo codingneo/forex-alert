@@ -1,3 +1,4 @@
 streamlit
 schedule
 streamlit-server-state
+streamlit-analytics
